@@ -1,21 +1,11 @@
-package main
+package sysinfo
 
 import (
-	"time"
 	"fmt"
 	"io/ioutil"
 	"strconv"
 	"strings"
-	"os"
-	"encoding/json"
 )
-
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
 
 type Sysinfo struct {
 	Usage	float64	`json:"cpu"`
@@ -90,43 +80,4 @@ func cpuLoad() (smin float64, lmin float64, lbmin float64) {
 				}
 	}
 	return
-}
-
-func main() {
-	f, err := os.Create("sistem.info")
-	check(err)
-	defer f.Close()
-
-	uptime := uptime()
-
-	smin, lmin, lbmin := cpuLoad()
-	fmt.Println("Load Average CPU : ", smin, lmin, lbmin)
-	ss, _, _ := cpuLoad()
-	fmt.Println("gur siji : ", ss)
-	idle, total := cpuUsage()
-	time.Sleep(1 * time.Second)
-	idle1, total1 := cpuUsage()
-
-	idleTik := float64(idle1 - idle)
-	totalTik := float64(total1 - total)
-	sipiyu := 100 * (totalTik - idleTik) / totalTik
-	fmt.Printf("Penggunaan CPU : %f %%\n", sipiyu)
-	fmt.Printf("sipiyu %T %+v\n", sipiyu, sipiyu)
-
-	sipiye := strconv.FormatFloat(sipiyu, 'f', 3, 64)
-	fmt.Printf("sipiye %T %+v\n", sipiye, sipiye)
-	result := []byte(sipiye)
-
-	n1, err := f.Write(result)
-	check(err)
-	fmt.Printf("wrote %d bytes\n", n1)
-
-	f.Sync()
-
-	jcpu := Sysinfo{sipiyu, smin, lmin, lbmin, uptime}
-	b, _ := json.MarshalIndent(jcpu, "", "    ")
-	err = ioutil.WriteFile("sistem.json", b, 0644)
-	fmt.Printf("%+v", jcpu)
-
-	//fmt.Printf("result:%+v\n", result)
 }
