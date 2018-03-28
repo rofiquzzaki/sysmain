@@ -9,7 +9,7 @@ import (
 	"os"
 	"encoding/json"
 
-	"github.com/rofiquzzaki/sysmain"
+	"github.com/rofiquzzaki/sysmain/sysinfo"
 )
 
 func check(e error) {
@@ -23,15 +23,15 @@ func main() {
 	check(err)
 	defer f.Close()
 
-	uptime := sysinfo.uptime()
+	uptime := sysinfo.Uptime()
 
-	smin, lmin, lbmin := sysinfo.cpuLoad()
+	smin, lmin, lbmin := sysinfo.CpuLoad()
 	fmt.Println("Load Average CPU : ", smin, lmin, lbmin)
-	ss, _, _ := sysinfo.cpuLoad()
+	ss, _, _ := sysinfo.CpuLoad()
 	fmt.Println("gur siji : ", ss)
-	idle, total := sysinfo.cpuUsage()
+	idle, total := sysinfo.CpuUsage()
 	time.Sleep(1 * time.Second)
-	idle1, total1 := sysinfo.cpuUsage()
+	idle1, total1 := sysinfo.CpuUsage()
 
 	idleTik := float64(idle1 - idle)
 	totalTik := float64(total1 - total)

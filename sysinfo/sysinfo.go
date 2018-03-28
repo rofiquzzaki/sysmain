@@ -15,7 +15,7 @@ type Sysinfo struct {
 	Uptime	float64 `json:"uptime"`
 }
 
-func uptime() (uptime float64) {
+func Uptime() (uptime float64) {
 	isi, err := ioutil.ReadFile("/proc/uptime")
 	if err !=nil {
 		return
@@ -33,7 +33,7 @@ func uptime() (uptime float64) {
 	return
 }
 
-func cpuUsage() (idle, total uint64) {
+func CpuUsage() (idle, total uint64) {
 	isi, err := ioutil.ReadFile("/proc/stat")
 	if err != nil {
 		return
@@ -59,7 +59,7 @@ func cpuUsage() (idle, total uint64) {
 	return
 }
 
-func cpuLoad() (smin float64, lmin float64, lbmin float64) {
+func CpuLoad() (smin float64, lmin float64, lbmin float64) {
 	isi, err := ioutil.ReadFile("/proc/loadavg")
 	if err != nil {
 		return
