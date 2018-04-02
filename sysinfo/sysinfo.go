@@ -13,6 +13,7 @@ type Sysinfo struct {
 	Lmin	float64	`json:"load1"`
 	Lbmin	float64	`json:"load2"`
 	Uptime	float64 `json:"uptime"`
+	UsedMem	float64 `json:"usedmem"`
 }
 
 func Uptime() (uptime float64) {
@@ -65,7 +66,7 @@ func CpuLoad() (smin float64, lmin float64, lbmin float64) {
 		return
 	}
 	lines := strings.Split(string(isi), " ")
-	for i :=0; i < 3; i++ {
+	for i := 0; i < 3; i++ {
 		val, err := strconv.ParseFloat(lines[i], 64)
 		if err != nil {
 			fmt.Println("Error: ", i, lines[i], err)
@@ -80,4 +81,43 @@ func CpuLoad() (smin float64, lmin float64, lbmin float64) {
 				}
 	}
 	return
+}
+
+func MemInfo() (total int, free int, used float64) {
+    isi, err := ioutil.ReadFile("/proc/meminfo")
+    if err != nil {
+        return
+    }
+
+    lines := strings.Split(string(isi), "\n")
+    for _, line := range(lines) {
+        fields := strings.Fields(line)
+        if fields[0] == "MemTotal:" {
+            numFields := len(fields)
+            for i := 1; i < numFields; i++ {
+                if i == 1 {
+                    val, err := strconv.Atoi(fields[i])
+                    if err != nil {
+                        fmt.Println("Error: ", i, fields[i], err)
+                    }
+                    total = val
+                }
+            }
+            continue
+        } else if fields[0] == "MemAvailable:" {
+            numFields := len(fields)
+            for i := 1; i < numFields; i++ {
+                if i == 1 {
+                    val, err := strconv.Atoi(fields[i])
+                    if err != nil {
+                        fmt.Println("Error: ", i, fields[i], err)
+                    }
+                    free = val
+                }
+            }
+            break
+        }
+    }
+    used = ((float64(total) - float64(free)) / float64(total)) * 100
+    return
 }

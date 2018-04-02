@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strconv"
-	//"strings"
 	"os"
 	"encoding/json"
 
@@ -24,6 +23,8 @@ func main() {
 	defer f.Close()
 
 	uptime := sysinfo.Uptime()
+
+	totol, freo, usedmem := sysinfo.MemInfo()
 
 	smin, lmin, lbmin := sysinfo.CpuLoad()
 	fmt.Println("Load Average CPU : ", smin, lmin, lbmin)
@@ -49,10 +50,11 @@ func main() {
 
 	f.Sync()
 
-	jcpu := sysinfo.Sysinfo{sipiyu, smin, lmin, lbmin, uptime}
+	jcpu := sysinfo.Sysinfo{sipiyu, smin, lmin, lbmin, uptime, usedmem}
 	b, _ := json.MarshalIndent(jcpu, "", "    ")
 	err = ioutil.WriteFile("sistem.json", b, 0644)
-	fmt.Printf("%+v", jcpu)
+	fmt.Printf("%+v \n", jcpu)
+	fmt.Println("total ", totol, "free ", freo, "terpakai ", usedmem)
 
 	//fmt.Printf("result:%+v\n", result)
 }
