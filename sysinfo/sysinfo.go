@@ -92,6 +92,10 @@ func MemInfo() (total int, free int, used float64) {
     lines := strings.Split(string(isi), "\n")
     for _, line := range(lines) {
         fields := strings.Fields(line)
+		//soalnya lines terakhir fields[] kosong
+		if len(fields) <= 0 {
+			break
+		}
         if fields[0] == "MemTotal:" {
             numFields := len(fields)
             for i := 1; i < numFields; i++ {
@@ -101,9 +105,9 @@ func MemInfo() (total int, free int, used float64) {
                         fmt.Println("Error: ", i, fields[i], err)
                     }
                     total = val
+					fmt.Println("total : ", total)
                 }
             }
-            continue
         } else if fields[0] == "MemAvailable:" {
             numFields := len(fields)
             for i := 1; i < numFields; i++ {
@@ -113,11 +117,26 @@ func MemInfo() (total int, free int, used float64) {
                         fmt.Println("Error: ", i, fields[i], err)
                     }
                     free = val
+					fmt.Println("free avail :", free)
                 }
             }
-            break
-        }
+			used = ((float64(total) - float64(free)) / float64(total)) * 100
+			fmt.Println("used dari avail :", used)
+		} else if fields[0] == "MemFree:" {
+			numFields := len(fields)
+			for i := 1; i < numFields; i++ {
+				if i == 1 {
+					val, err := strconv.Atoi(fields[i])
+					if err != nil {
+						fmt.Println("Error: ", i, fields[i], err)
+					}
+					free = val
+					fmt.Println("free free :", free)
+				}
+			}
+			used = ((float64(total) - float64(free)) / float64(total)) * 100
+			fmt.Println("used dari free :", used)
+		}
     }
-    used = ((float64(total) - float64(free)) / float64(total)) * 100
     return
 }
