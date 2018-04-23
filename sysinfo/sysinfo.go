@@ -5,15 +5,65 @@ import (
 	"io/ioutil"
 	"strconv"
 	"strings"
+	"syscall"
 )
 
-type Sysinfo struct {
-	Usage	float64	`json:"cpu"`
-	Smin	float64	`json:"load0"`
-	Lmin	float64	`json:"load1"`
-	Lbmin	float64	`json:"load2"`
-	Uptime	float64 `json:"uptime"`
-	UsedMem	float64 `json:"usedmem"`
+//Network Interface belum dinamis
+//Percobaan pakai argument ether
+func NetUsage(ether string) (rx int, tx int) {
+	isi, err := ioutil.ReadFile("/sys/class/net/"+ether+"/statistics/rx_bytes")
+	isi1, err := ioutil.ReadFile("/sys/class/net/"+ether+"/statistics/tx_bytes")
+	if err != nil {
+		return
+	}
+	isisplit := strings.Split(string(isi), "\n")
+	isi1split := strings.Split(string(isi1), "\n")
+	rx, err = strconv.Atoi(isisplit[0])
+	if err != nil {
+		fmt.Println("Error: ", isi, err)
+	}
+	tx, err = strconv.Atoi(isi1split[0])
+	if err != nil {
+		fmt.Println("Error: ", isi1, err)
+	}
+	return
+}
+
+//DiskUsage ntah kenapa di struct
+type DiskUsage struct {
+	stat *syscall.Statfs_t
+}
+
+//Return volumePath, harus valid path
+func NewDiskUsage(volumePath string) *DiskUsage {
+	var stat syscall.Statfs_t
+	syscall.Statfs(volumePath, &stat)
+	return &DiskUsage{&stat}
+}
+
+//Free bytes on file system
+func (this *DiskUsage) Free() uint64 {
+	return this.stat.Bfree * uint64(this.stat.Bsize)
+}
+
+//Available bytes on file system to an unprivileged user
+func (this *DiskUsage) Available() uint64 {
+	return this.stat.Bavail * uint64(this.stat.Bsize)
+}
+
+//Total size of the file system
+func (this *DiskUsage) Size() uint64 {
+	return this.stat.Blocks * uint64(this.stat.Bsize)
+}
+
+//Total bytes used of the file system
+func (this *DiskUsage) Used() uint64 {
+	return this.Size() - this.Free()
+}
+
+//Percentage of use of the file system
+func (this *DiskUsage) Usage() float64 {
+	return float64(this.Used()) / float64(this.Size())
 }
 
 func Uptime() (uptime float64) {

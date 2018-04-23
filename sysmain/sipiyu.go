@@ -1,15 +1,80 @@
 package main
 
 import (
-	"time"
+	//"time"
 	"fmt"
-	"io/ioutil"
-	//"strconv"
-	//"os"
+	//"io/ioutil"
+	"strconv"
+	"os"
 	"encoding/json"
+	"strings"
 
 	"github.com/rofiquzzaki/sysmain/sysinfo"
+	zmq "github.com/pebbe/zmq4"
 )
+
+type fn func(melbu string) (metu string)
+
+func WrapNetUsage(melbu string) (metu string) {
+	rx, tx := sysinfo.NetUsage(melbu)
+	rxo := strconv.Itoa(rx)
+	txo := strconv.Itoa(tx)
+	hasil := "{ rx : "+rxo+", tx : "+txo+" }"
+	metu = hasil
+	return metu
+}
+
+func WrapDiskUsage(melbu string) (metu string) {
+	disk := sysinfo.NewDiskUsage(melbu)
+	diskusg := disk.Usage() * 100
+	kestr := strconv.FormatFloat(diskusg, 'f', 2, 64)
+	hasil := "{ diskusg : "+kestr+" }"
+	metu = hasil
+	return metu
+}
+
+type Config struct {
+	Intrf string `json:"intrf"`
+	Partn string `json:"partn"`
+	Sport string `json:"sport"`
+}
+
+type Sysinfo struct {
+	Usage	float64	`json:"cpu"`
+	Smin	float64	`json:"load0"`
+	Lmin	float64	`json:"load1"`
+	Lbmin	float64	`json:"load2"`
+	Uptime	float64	`json:"uptime"`
+	UsedMem	float64	`json:"usedmem"`
+	DiskUsg	float64	`json:"diskusg"`
+	NetRx	int		`json:"netrx"`
+	NetTx	int		`json:"nettx"`
+}
+
+type InputMsg struct {
+	Params	string
+	Idne	string
+	Method	string
+}
+
+func LoadConfiguration(file string) Config {
+    var config Config
+    configFile, err := os.Open(file)
+    defer configFile.Close()
+    if err != nil {
+        fmt.Println(err.Error())
+    }
+    jsonParser := json.NewDecoder(configFile)
+    jsonParser.Decode(&config)
+    return config
+}
+
+func LoadInput(inputan string) InputMsg {
+	var inputMsg InputMsg
+	jsonParser := json.NewDecoder(strings.NewReader(inputan))
+	jsonParser.Decode(&inputMsg)
+	return inputMsg
+}
 
 func check(e error) {
 	if e != nil {
@@ -21,12 +86,94 @@ func check(e error) {
 //func aptem() 
 
 func main() {
+	m := map[string] fn {
+		"net" : WrapNetUsage,
+		"disk" : WrapDiskUsage,
+	}
+
+	//wkwk := m["net"]("enp3s0")
+	//fmt.Println(wkwk)
+
+	//config := LoadConfiguration("konf.json")
+
+	ruter, _ := zmq.NewSocket(zmq.ROUTER)
+	defer ruter.Close()
+
+	rutertcp, _ := zmq.NewSocket(zmq.ROUTER)
+	defer rutertcp.Close()
+
+	//ruter.Bind("tcp://*:5671")
+	ruter.Bind("ipc:///tmp/ngawur")
+	rutertcp.Bind("tcp://*:5671")
+
+	poller := zmq.NewPoller()
+	poller.Add(rutertcp, zmq.POLLIN)
+	poller.Add(ruter, zmq.POLLIN)
+
+	for {
+		sockets, _ := poller.Poll(-1)
+		for _, socket := range sockets {
+			switch s := socket.Socket
+			s {
+			case ruter:
+				idne, _ := s.Recv(0)
+				isine, _ := s.Recv(0)
+				fmt.Println(idne, isine)
+				masukan := LoadInput(isine)
+				kirime := m[masukan.Method](masukan.Params)
+				ruter.Send(idne, zmq.SNDMORE)
+				ruter.Send(kirime, 0)
+			}
+		}
+	}
+
+	/*
+	for {
+		sockets, _ := poller.Poll(-1)
+		for _, socket := range sockets {
+			switch s:= socket.Socket; s {
+			case ruter:
+				idne, _ := s.Recv(0)
+				isine, _ := s.Recv(0)
+				fmt.Println(idne, isine)
+				fmt.Println("iki ruter")
+				masukan := LoadInput(isine)
+				if masukan.Method == "disk" {
+					disk := sysinfo.NewDiskUsage(masukan.Params)
+					diskusg := disk.Usage()*100
+					val := strconv.FormatFloat(diskusg, 'f', 2, 64)
+					ruter.Send(idne, zmq.SNDMORE)
+					ruter.Send(val, 0)
+				}
+			case rutertcp:
+				idne, _ := s.Recv(0)
+				isine, _ := s.Recv(0)
+				fmt.Println(idne, isine)
+				fmt.Println("rutertcp")
+				masukan := LoadInput(isine)
+				if masukan.Method == "disk" {
+					fmt.Println("masuk ke if")
+					fmt.Println(masukan.Method)
+					disk := sysinfo.NewDiskUsage(masukan.Params)
+					diskusg := disk.Usage()*100
+					val := strconv.FormatFloat(diskusg, 'f', 2, 64)
+					rutertcp.Send(idne, zmq.SNDMORE)
+					rutertcp.Send(val, 0)
+				}
+			}
+		}
+	}
+	*/
+
+	/*
+	rx, tx := sysinfo.NetUsage(config.Intrf)
+	disk := sysinfo.NewDiskUsage(config.Partn)
+	diskusg := disk.Usage()*100
 	uptime := sysinfo.Uptime()
 
 	totol, freo, usedmem := sysinfo.MemInfo()
 
 	smin, lmin, lbmin := sysinfo.CpuLoad()
-	fmt.Println("Load Average CPU : ", smin, lmin, lbmin)
 	idle, total := sysinfo.CpuUsage()
 	time.Sleep(2 * time.Second)
 	idle1, total1 := sysinfo.CpuUsage()
@@ -34,13 +181,11 @@ func main() {
 	idleTik := float64(idle1 - idle)
 	totalTik := float64(total1 - total)
 	sipiyu := 100 * (totalTik - idleTik) / totalTik
-	fmt.Printf("Penggunaan CPU : %f %%\n", sipiyu)
 
-	jcpu := sysinfo.Sysinfo{sipiyu, smin, lmin, lbmin, uptime, usedmem}
+	jcpu := Sysinfo{sipiyu, smin, lmin, lbmin, uptime, usedmem, diskusg, rx, tx}
 	b, _ := json.MarshalIndent(jcpu, "", "    ")
 	ioutil.WriteFile("sistem.json", b, 0644)
 	fmt.Printf("%+v \n", jcpu)
 	fmt.Println("total ", totol, "free ", freo, "terpakai ", usedmem)
-
-	//fmt.Printf("result:%+v\n", result)
+	*/
 }
