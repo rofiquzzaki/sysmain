@@ -1,7 +1,7 @@
 package main
 
 import (
-	//"time"
+	"time"
 	"fmt"
 	//"io/ioutil"
 	"strconv"
@@ -19,8 +19,7 @@ func WrapNetUsage(melbu string) (metu string) {
 	rx, tx := sysinfo.NetUsage(melbu)
 	rxo := strconv.Itoa(rx)
 	txo := strconv.Itoa(tx)
-	hasil := "{ rx : "+rxo+", tx : "+txo+" }"
-	metu = hasil
+	metu = "{ rx : "+rxo+", tx : "+txo+" }"
 	return metu
 }
 
@@ -28,8 +27,44 @@ func WrapDiskUsage(melbu string) (metu string) {
 	disk := sysinfo.NewDiskUsage(melbu)
 	diskusg := disk.Usage() * 100
 	kestr := strconv.FormatFloat(diskusg, 'f', 2, 64)
-	hasil := "{ diskusg : "+kestr+" }"
-	metu = hasil
+	metu = "{ diskusg : "+kestr+" }"
+	return metu
+}
+
+func WrapUptime(melbu string) (metu string) {
+	uptime := sysinfo.Uptime()
+	kestr := strconv.FormatFloat(uptime, 'f', 2, 64)
+	metu = "{ uptime : "+kestr+" }"
+	return metu
+}
+
+func WrapCpuLoad(melbu string) (metu string) {
+	smin, lmin, lbmin := sysinfo.CpuLoad()
+	sminstr := strconv.FormatFloat(smin, 'f', 2, 64)
+	lminstr := strconv.FormatFloat(lmin, 'f', 2, 64)
+	lbminstr := strconv.FormatFloat(lbmin, 'f', 2, 64)
+	metu = "{ loadavg : "+sminstr+", loadavg1 : "+lminstr+", loadavg2 : "+lbminstr+" }"
+	return metu
+}
+
+func WrapCpuUsage(melbu string) (metu string) {
+	idle, total := sysinfo.CpuUsage()
+	time.Sleep(3 * time.Second)
+	idle1, total1 := sysinfo.CpuUsage()
+
+	idleTik := float64(idle1 - idle)
+	totalTik := float64(total1 -total)
+	sipiyu := 100 * (totalTik - idleTik) / totalTik
+	metu = "{ cpuusg : "+strconv.FormatFloat(sipiyu, 'f', 2, 64)+" }"
+	return metu
+}
+
+func WrapMemInfo(melbu string) (metu string) {
+	total, free, used := sysinfo.MemInfo()
+	totalstr := strconv.Itoa(total)
+	freestr := strconv.Itoa(free)
+	usedstr := strconv.FormatFloat(used, 'f', 2, 64)
+	metu = "{ total : "+totalstr+", free : "+freestr+", used : "+usedstr+" }"
 	return metu
 }
 
@@ -53,7 +88,7 @@ type Sysinfo struct {
 
 type InputMsg struct {
 	Params	string
-	Idne	string
+	//Idne	string
 	Method	string
 }
 
@@ -76,11 +111,13 @@ func LoadInput(inputan string) InputMsg {
 	return inputMsg
 }
 
+/*
 func check(e error) {
 	if e != nil {
 		panic(e)
 	}
 }
+*/
 
 //niatnya mau buat goroutine
 //func aptem() 
@@ -89,6 +126,10 @@ func main() {
 	m := map[string] fn {
 		"net" : WrapNetUsage,
 		"disk" : WrapDiskUsage,
+		"uptime" : WrapUptime,
+		"loadavg" : WrapCpuLoad,
+		"cpuusg" : WrapCpuUsage,
+		"memory" : WrapMemInfo,
 	}
 
 	//wkwk := m["net"]("enp3s0")
@@ -120,9 +161,14 @@ func main() {
 				isine, _ := s.Recv(0)
 				fmt.Println(idne, isine)
 				masukan := LoadInput(isine)
-				kirime := m[masukan.Method](masukan.Params)
-				ruter.Send(idne, zmq.SNDMORE)
-				ruter.Send(kirime, 0)
+				if val, ok := m[masukan.Method]; ok {
+					nyoh := val(masukan.Params)
+					ruter.Send(idne, zmq.SNDMORE)
+					ruter.Send(nyoh, 0)
+				} else {
+					ruter.Send(idne, zmq.SNDMORE)
+					ruter.Send("salah", 0)
+				}
 			}
 		}
 	}
