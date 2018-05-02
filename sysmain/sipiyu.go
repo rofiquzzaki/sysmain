@@ -15,11 +15,18 @@ import (
 
 type fn func(melbu string) (metu string)
 
+func WrapThermal(melbu string) (metu string) {
+	temp := sysinfo.Thermal()
+	tempstr := strconv.Itoa(temp)
+	metu = "{ \"temp\" : "+tempstr+" }"
+	return
+}
+
 func WrapNetUsage(melbu string) (metu string) {
 	rx, tx := sysinfo.NetUsage(melbu)
 	rxo := strconv.Itoa(rx)
 	txo := strconv.Itoa(tx)
-	metu = "{ rx : "+rxo+", tx : "+txo+" }"
+	metu = "{ \"rx\" : "+rxo+", \"tx\" : "+txo+" }"
 	return metu
 }
 
@@ -27,14 +34,16 @@ func WrapDiskUsage(melbu string) (metu string) {
 	disk := sysinfo.NewDiskUsage(melbu)
 	diskusg := disk.Usage() * 100
 	kestr := strconv.FormatFloat(diskusg, 'f', 2, 64)
-	metu = "{ diskusg : "+kestr+" }"
+	metu = "{ \"diskusg\" : "+kestr+" }"
+	fmt.Printf("tipe metu : %T \n", metu)
+	fmt.Println(metu)
 	return metu
 }
 
 func WrapUptime(melbu string) (metu string) {
 	uptime := sysinfo.Uptime()
 	kestr := strconv.FormatFloat(uptime, 'f', 2, 64)
-	metu = "{ uptime : "+kestr+" }"
+	metu = "{ \"uptime\" : "+kestr+" }"
 	return metu
 }
 
@@ -43,7 +52,7 @@ func WrapCpuLoad(melbu string) (metu string) {
 	sminstr := strconv.FormatFloat(smin, 'f', 2, 64)
 	lminstr := strconv.FormatFloat(lmin, 'f', 2, 64)
 	lbminstr := strconv.FormatFloat(lbmin, 'f', 2, 64)
-	metu = "{ loadavg : "+sminstr+", loadavg1 : "+lminstr+", loadavg2 : "+lbminstr+" }"
+	metu = "{ \"loadavg\" : "+sminstr+", \"loadavg1\" : "+lminstr+", \"loadavg2\" : "+lbminstr+" }"
 	return metu
 }
 
@@ -55,7 +64,7 @@ func WrapCpuUsage(melbu string) (metu string) {
 	idleTik := float64(idle1 - idle)
 	totalTik := float64(total1 -total)
 	sipiyu := 100 * (totalTik - idleTik) / totalTik
-	metu = "{ cpuusg : "+strconv.FormatFloat(sipiyu, 'f', 2, 64)+" }"
+	metu = "{ \"cpuusg\" : "+strconv.FormatFloat(sipiyu, 'f', 2, 64)+" }"
 	return metu
 }
 
@@ -64,7 +73,7 @@ func WrapMemInfo(melbu string) (metu string) {
 	totalstr := strconv.Itoa(total)
 	freestr := strconv.Itoa(free)
 	usedstr := strconv.FormatFloat(used, 'f', 2, 64)
-	metu = "{ total : "+totalstr+", free : "+freestr+", used : "+usedstr+" }"
+	metu = "{ \"total\" : "+totalstr+", \"free\" : "+freestr+", \"used\" : "+usedstr+" }"
 	return metu
 }
 
@@ -130,6 +139,7 @@ func main() {
 		"loadavg" : WrapCpuLoad,
 		"cpuusg" : WrapCpuUsage,
 		"memory" : WrapMemInfo,
+		"thermal" : WrapThermal,
 	}
 
 	//wkwk := m["net"]("enp3s0")
@@ -169,6 +179,29 @@ func main() {
 					ruter.Send(idne, zmq.SNDMORE)
 					ruter.Send("salah", 0)
 				}
+			case rutertcp:
+				idne, _ := s.Recv(0)
+				isine, _ := s.Recv(0)
+				fmt.Println(idne, isine)
+				masukan := LoadInput(isine)
+				if val, ok := m[masukan.Method]; ok {
+					nyoh := val(masukan.Params)
+					rutertcp.Send(idne, zmq.SNDMORE)
+					rutertcp.Send(nyoh, 0)
+				} else {
+					rutertcp.Send(idne, zmq.SNDMORE)
+					rutertcp.Send("salah", 0)
+				}
+			}
+		}
+	}
+
+	/*
+	for {
+		sockets, _ := poller.Poll(-1)
+		for _, socket := range sockets {
+			switch s:= socket.Socket; s {
+			case ruter:
 			}
 		}
 	}

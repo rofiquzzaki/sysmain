@@ -6,7 +6,34 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"path/filepath"
 )
+
+//func BwUsage(ether string) (rx int, tx int) {
+//}
+
+func Thermal() (temp int) {
+	files, err := filepath.Glob("/sys/class/thermal/thermal_zone*")
+	if err != nil {
+		return
+	}
+	jumlah := len(files)
+	path := files[jumlah-1]
+	//var path string
+	//for _, x := range files {
+	//	path = x
+	//}
+	isi, err := ioutil.ReadFile(path+"/temp")
+	if err !=nil {
+		return
+	}
+	isisplit := strings.Split(string(isi), "\n")
+	temp, err = strconv.Atoi(isisplit[0])
+	return
+}
+
+//func Thermal() (temp int) {
+//	isi, err :=
 
 //Network Interface belum dinamis
 //Percobaan pakai argument ether
