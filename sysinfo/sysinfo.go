@@ -35,7 +35,6 @@ func Thermal() (temp int) {
 //func Thermal() (temp int) {
 //	isi, err :=
 
-//Network Interface belum dinamis
 //Percobaan pakai argument ether
 func NetUsage(ether string) (rx int, tx int) {
 	isi, err := ioutil.ReadFile("/sys/class/net/"+ether+"/statistics/rx_bytes")
@@ -53,6 +52,66 @@ func NetUsage(ether string) (rx int, tx int) {
 	if err != nil {
 		fmt.Println("Error: ", isi1, err)
 	}
+	//nulis ke file bulanan
+	/*
+	bacafilemon:
+	isibwmon, err := ioutil.ReadFile("/aino/bw_month.log")
+	if err != nil {
+		ioutil.WriteFile("/aino/bw_month.log", []byte("0"), 0644)
+		goto bacafilemon
+	}
+	bwmonsplit := strings.Split(string(isibwmon), "\n")
+	bwmontoint, err := strconv.Atoi(bwmonsplit[0])
+	fmt.Printf("ini bwmontoint:%d\n", bwmontoint)
+	if err != nil {
+		fmt.Println("Error : ", isibwmon, err)
+	}
+	total := bwmontoint + rx + tx
+	bwmonth = total
+	nyoh := strconv.Itoa(total)
+	fmt.Println("nyoh : ", nyoh)
+	ioutil.WriteFile("/aino/bw_month.log", []byte(nyoh), 0644)
+	*/
+	//ini nanti file di /sys/class ditambahkan ke /aino/log/bw_month
+	return
+}
+
+func BwMon(ether string) (bwmon int) {
+	rx, tx := NetUsage(ether)
+	bwnow := rx + tx
+	bacafilemon:
+	isibwtot, err := ioutil.ReadFile("/aino/bw_month.log")
+	if err != nil {
+		ioutil.WriteFile("/aino/bw_month.log", []byte("0 0"), 0644)
+		goto bacafilemon
+	}
+	isisplit := strings.Split(string(isibwtot), "\n")
+	isi := strings.Fields(isisplit[0])
+	bwtot, err := strconv.Atoi(isi[0])
+	if err != nil {
+		fmt.Println("Error bwtot : ", isibwtot, err)
+	}
+	bwtemp, err := strconv.Atoi(isi[1])
+	if err != nil {
+		fmt.Println("Error bwtemp : ", isibwtot, err)
+	}
+	//perhitungan
+	var bwtemp1 int
+	var keisi string
+	if bwnow >= bwtot && bwtemp == 0 {
+		bwmon = (bwnow - bwtot) + bwtot
+		bwtemp1 = 0
+		keisi = strconv.Itoa(bwmon)+" "+strconv.Itoa(bwtemp1)
+	} else if bwnow >= bwtot && bwtemp > 0 {
+		bwmon = bwnow + bwtot
+		bwtemp1 = 0
+		keisi = strconv.Itoa(bwmon)+" "+strconv.Itoa(bwtemp1)
+	} else if bwnow < bwtot {
+		bwmon = bwnow + bwtot
+		bwtemp1 = bwmon
+		keisi = strconv.Itoa(bwtot)+" "+strconv.Itoa(bwtemp1)
+	}
+	ioutil.WriteFile("/aino/bw_month.log", []byte(keisi), 0644)
 	return
 }
 

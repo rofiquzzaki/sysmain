@@ -24,6 +24,8 @@ func WrapThermal(melbu string) (metu string) {
 
 func WrapNetUsage(melbu string) (metu string) {
 	rx, tx := sysinfo.NetUsage(melbu)
+	totbw := sysinfo.BwMon(melbu)
+	fmt.Println(totbw)
 	rxo := strconv.Itoa(rx)
 	txo := strconv.Itoa(tx)
 	metu = "{ \"rx\" : "+rxo+", \"tx\" : "+txo+" }"
