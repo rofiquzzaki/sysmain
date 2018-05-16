@@ -9,9 +9,6 @@ import (
 	"path/filepath"
 )
 
-//func BwUsage(ether string) (rx int, tx int) {
-//}
-
 func Thermal() (temp int) {
 	files, err := filepath.Glob("/sys/class/thermal/thermal_zone*")
 	if err != nil {
@@ -32,9 +29,6 @@ func Thermal() (temp int) {
 	return
 }
 
-//func Thermal() (temp int) {
-//	isi, err :=
-
 //Percobaan pakai argument ether
 func NetUsage(ether string) (rx int, tx int) {
 	isi, err := ioutil.ReadFile("/sys/class/net/"+ether+"/statistics/rx_bytes")
@@ -52,39 +46,24 @@ func NetUsage(ether string) (rx int, tx int) {
 	if err != nil {
 		fmt.Println("Error: ", isi1, err)
 	}
-	//nulis ke file bulanan
-	/*
-	bacafilemon:
-	isibwmon, err := ioutil.ReadFile("/aino/bw_month.log")
-	if err != nil {
-		ioutil.WriteFile("/aino/bw_month.log", []byte("0"), 0644)
-		goto bacafilemon
-	}
-	bwmonsplit := strings.Split(string(isibwmon), "\n")
-	bwmontoint, err := strconv.Atoi(bwmonsplit[0])
-	fmt.Printf("ini bwmontoint:%d\n", bwmontoint)
-	if err != nil {
-		fmt.Println("Error : ", isibwmon, err)
-	}
-	total := bwmontoint + rx + tx
-	bwmonth = total
-	nyoh := strconv.Itoa(total)
-	fmt.Println("nyoh : ", nyoh)
-	ioutil.WriteFile("/aino/bw_month.log", []byte(nyoh), 0644)
-	*/
-	//ini nanti file di /sys/class ditambahkan ke /aino/log/bw_month
 	return
 }
 
-func BwMon(ether string) (bwmon int) {
+func BwMon(ether string) /*(bwmon int)*/ {
 	rx, tx := NetUsage(ether)
 	bwnow := rx + tx
+	filepath := "/aino/bw_"+ether+".log"
+
 	bacafilemon:
-	isibwtot, err := ioutil.ReadFile("/aino/bw_month.log")
+	isibwtot, err := ioutil.ReadFile(filepath)
 	if err != nil {
-		ioutil.WriteFile("/aino/bw_month.log", []byte("0 0"), 0644)
+		rusak := ioutil.WriteFile(filepath, []byte("0 0 0"), 0644)
+		if rusak != nil {
+			fmt.Println("Error nulis file : ", rusak)
+		}
 		goto bacafilemon
 	}
+
 	isisplit := strings.Split(string(isibwtot), "\n")
 	isi := strings.Fields(isisplit[0])
 	bwtot, err := strconv.Atoi(isi[0])
@@ -95,9 +74,33 @@ func BwMon(ether string) (bwmon int) {
 	if err != nil {
 		fmt.Println("Error bwtemp : ", isibwtot, err)
 	}
+	statstart, err := strconv.Atoi(isi[2])
+	if err != nil {
+		fmt.Println("Error statstart : ", isibwtot, err)
+	}
 	//perhitungan
 	var bwtemp1 int
 	var keisi string
+	var bwmon int
+	var statstart1 int
+	if bwtemp > 0 && statstart == 1 {
+		bwmon = bwtot + bwtemp
+		bwtemp1 = bwnow
+		keisi = strconv.Itoa(bwmon)+" "+strconv.Itoa(bwtemp1)+" "+strconv.Itoa(0)
+	} else if bwtemp > 0 && statstart == 0 {
+		bwmon = bwtot
+		bwtemp1 = bwnow
+		statstart1 = statstart
+		keisi = strconv.Itoa(bwmon)+" "+strconv.Itoa(bwtemp1)+" "+strconv.Itoa(statstart1)
+	} else if bwtemp == 0 {
+		bwmon = bwtot
+		bwtemp1 = bwnow
+		keisi = strconv.Itoa(bwmon)+" "+strconv.Itoa(bwtemp1)+" "+strconv.Itoa(statstart1)
+	}
+	/*
+	var bwtemp1 int
+	var keisi string
+	var bwmon int
 	if bwnow >= bwtot && bwtemp == 0 {
 		bwmon = (bwnow - bwtot) + bwtot
 		bwtemp1 = 0
@@ -111,8 +114,13 @@ func BwMon(ether string) (bwmon int) {
 		bwtemp1 = bwmon
 		keisi = strconv.Itoa(bwtot)+" "+strconv.Itoa(bwtemp1)
 	}
-	ioutil.WriteFile("/aino/bw_month.log", []byte(keisi), 0644)
-	return
+	*/
+	//nulis ke file current
+	rusak := ioutil.WriteFile(filepath, []byte(keisi), 0644)
+	if rusak != nil {
+		fmt.Println("Gagal nulis file : ", rusak)
+	}
+	//return
 }
 
 //DiskUsage ntah kenapa di struct

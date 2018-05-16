@@ -3,7 +3,7 @@ package main
 import (
 	"time"
 	"fmt"
-	//"io/ioutil"
+	"io/ioutil"
 	"strconv"
 	"os"
 	"encoding/json"
@@ -22,10 +22,11 @@ func WrapThermal(melbu string) (metu string) {
 	return
 }
 
+
 func WrapNetUsage(melbu string) (metu string) {
 	rx, tx := sysinfo.NetUsage(melbu)
-	totbw := sysinfo.BwMon(melbu)
-	fmt.Println(totbw)
+	//totbw := sysinfo.BwMon(melbu)
+	//fmt.Println(totbw)
 	rxo := strconv.Itoa(rx)
 	txo := strconv.Itoa(tx)
 	metu = "{ \"rx\" : "+rxo+", \"tx\" : "+txo+" }"
@@ -130,10 +131,88 @@ func check(e error) {
 }
 */
 
-//niatnya mau buat goroutine
-//func aptem() 
+func StatMtime(name string) (mtime time.Time, err error) {
+	fi, err := os.Stat(name)
+	if err != nil {
+		return
+	}
+	mtime = fi.ModTime()
+	return
+}
+
+func bwstartcount(ether string) {
+	fmt.Println("fungsi bwstartcount")
+	var keisi string
+	filepath := "/aino/bw_"+ether+".log"
+	bacafilemon:
+	isibwtot, err := ioutil.ReadFile(filepath)
+    if err != nil {
+        rusak := ioutil.WriteFile(filepath, []byte("0 0 0"), 0644)
+        if rusak != nil {
+            fmt.Println("Error nulis file : ", rusak)
+        }
+        goto bacafilemon
+    }
+
+	mtime, err := StatMtime(filepath)
+	if err != nil {
+		fmt.Println(err)
+	}
+	_, bulanMtime, _ := mtime.Date()
+	_, bulanNow, _ := time.Now().Date()
+	fmt.Println("bulanMtime : ", bulanMtime)
+    if bulanMtime != bulanNow {
+		namabaru := "/aino/bw_"+ether+"_"+bulanMtime.String()+".log"
+		err := os.Rename(filepath, namabaru)
+		if err != nil {
+			fmt.Println(err)
+		}
+		goto bacafilemon
+	}
+
+    isisplit := strings.Split(string(isibwtot), "\n")
+    isi := strings.Fields(isisplit[0])
+    bwtot, err := strconv.Atoi(isi[0])
+    if err != nil {
+        fmt.Println("Error bwtot : ", isibwtot, err)
+    }
+    bwtemp, err := strconv.Atoi(isi[1])
+    if err != nil {
+        fmt.Println("Error bwtemp : ", isibwtot, err)
+    }
+	/*
+    statstart, err := strconv.Atoi(isi[2])
+    if err != nil {
+        fmt.Println("Error statstart : ", isibwtot, err)
+    }
+	*/
+	keisi = strconv.Itoa(bwtot)+" "+strconv.Itoa(bwtemp)+" "+strconv.Itoa(1)
+	rusak := ioutil.WriteFile(filepath, []byte(keisi), 0644)
+	if rusak != nil {
+		fmt.Println("Gagal nulis file : ", rusak)
+	}
+}
+
+func loopingcount() {
+	for {
+		fmt.Println("fungsi loopingcount")
+		msgtime2, err := StatMtime("/aino/bw_monthenp3s0.log")
+		if err != nil {
+			fmt.Println(err)
+		}
+		_, bulanmsg8, _ := msgtime2.Date()
+		fmt.Println("barlooping sebelum bwmon: ", bulanmsg8)
+
+		sysinfo.BwMon("enp3s0")
+		time.Sleep(time.Second * 10)
+	}
+}
 
 func main() {
+	//saat startup, status bwMon di ganti 1
+	bwstartcount("enp3s0")
+
+	//mapping wrap function
 	m := map[string] fn {
 		"net" : WrapNetUsage,
 		"disk" : WrapDiskUsage,
@@ -143,6 +222,7 @@ func main() {
 		"memory" : WrapMemInfo,
 		"thermal" : WrapThermal,
 	}
+
 
 	//wkwk := m["net"]("enp3s0")
 	//fmt.Println(wkwk)
@@ -155,7 +235,6 @@ func main() {
 	rutertcp, _ := zmq.NewSocket(zmq.ROUTER)
 	defer rutertcp.Close()
 
-	//ruter.Bind("tcp://*:5671")
 	ruter.Bind("ipc:///tmp/ngawur")
 	rutertcp.Bind("tcp://*:5671")
 
@@ -163,7 +242,10 @@ func main() {
 	poller.Add(rutertcp, zmq.POLLIN)
 	poller.Add(ruter, zmq.POLLIN)
 
+	go loopingcount()
+
 	for {
+		fmt.Println("for poller")
 		sockets, _ := poller.Poll(-1)
 		for _, socket := range sockets {
 			switch s := socket.Socket
@@ -197,54 +279,6 @@ func main() {
 			}
 		}
 	}
-
-	/*
-	for {
-		sockets, _ := poller.Poll(-1)
-		for _, socket := range sockets {
-			switch s:= socket.Socket; s {
-			case ruter:
-			}
-		}
-	}
-
-	/*
-	for {
-		sockets, _ := poller.Poll(-1)
-		for _, socket := range sockets {
-			switch s:= socket.Socket; s {
-			case ruter:
-				idne, _ := s.Recv(0)
-				isine, _ := s.Recv(0)
-				fmt.Println(idne, isine)
-				fmt.Println("iki ruter")
-				masukan := LoadInput(isine)
-				if masukan.Method == "disk" {
-					disk := sysinfo.NewDiskUsage(masukan.Params)
-					diskusg := disk.Usage()*100
-					val := strconv.FormatFloat(diskusg, 'f', 2, 64)
-					ruter.Send(idne, zmq.SNDMORE)
-					ruter.Send(val, 0)
-				}
-			case rutertcp:
-				idne, _ := s.Recv(0)
-				isine, _ := s.Recv(0)
-				fmt.Println(idne, isine)
-				fmt.Println("rutertcp")
-				masukan := LoadInput(isine)
-				if masukan.Method == "disk" {
-					fmt.Println("masuk ke if")
-					fmt.Println(masukan.Method)
-					disk := sysinfo.NewDiskUsage(masukan.Params)
-					diskusg := disk.Usage()*100
-					val := strconv.FormatFloat(diskusg, 'f', 2, 64)
-					rutertcp.Send(idne, zmq.SNDMORE)
-					rutertcp.Send(val, 0)
-				}
-			}
-		}
-	}
-	*/
 
 	/*
 	rx, tx := sysinfo.NetUsage(config.Intrf)
