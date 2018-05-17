@@ -22,13 +22,12 @@ func WrapThermal(melbu string) (metu string) {
 	return
 }
 
-
 func WrapNetUsage(melbu string) (metu string) {
 	rx, tx := sysinfo.NetUsage(melbu)
-	//totbw := sysinfo.BwMon(melbu)
-	//fmt.Println(totbw)
-	rxo := strconv.Itoa(rx)
-	txo := strconv.Itoa(tx)
+	time.Sleep(time.Second)
+	rx1, tx1 := sysinfo.NetUsage(melbu)
+	rxo := strconv.Itoa(rx1-rx)
+	txo := strconv.Itoa(tx1-tx)
 	metu = "{ \"rx\" : "+rxo+", \"tx\" : "+txo+" }"
 	return metu
 }
@@ -100,7 +99,6 @@ type Sysinfo struct {
 
 type InputMsg struct {
 	Params	string
-	//Idne	string
 	Method	string
 }
 
@@ -180,12 +178,6 @@ func bwstartcount(ether string) {
     if err != nil {
         fmt.Println("Error bwtemp : ", isibwtot, err)
     }
-	/*
-    statstart, err := strconv.Atoi(isi[2])
-    if err != nil {
-        fmt.Println("Error statstart : ", isibwtot, err)
-    }
-	*/
 	keisi = strconv.Itoa(bwtot)+" "+strconv.Itoa(bwtemp)+" "+strconv.Itoa(1)
 	rusak := ioutil.WriteFile(filepath, []byte(keisi), 0644)
 	if rusak != nil {
@@ -196,13 +188,6 @@ func bwstartcount(ether string) {
 func loopingcount() {
 	for {
 		fmt.Println("fungsi loopingcount")
-		msgtime2, err := StatMtime("/aino/bw_monthenp3s0.log")
-		if err != nil {
-			fmt.Println(err)
-		}
-		_, bulanmsg8, _ := msgtime2.Date()
-		fmt.Println("barlooping sebelum bwmon: ", bulanmsg8)
-
 		sysinfo.BwMon("enp3s0")
 		time.Sleep(time.Second * 10)
 	}
@@ -222,10 +207,6 @@ func main() {
 		"memory" : WrapMemInfo,
 		"thermal" : WrapThermal,
 	}
-
-
-	//wkwk := m["net"]("enp3s0")
-	//fmt.Println(wkwk)
 
 	//config := LoadConfiguration("konf.json")
 
@@ -280,27 +261,4 @@ func main() {
 		}
 	}
 
-	/*
-	rx, tx := sysinfo.NetUsage(config.Intrf)
-	disk := sysinfo.NewDiskUsage(config.Partn)
-	diskusg := disk.Usage()*100
-	uptime := sysinfo.Uptime()
-
-	totol, freo, usedmem := sysinfo.MemInfo()
-
-	smin, lmin, lbmin := sysinfo.CpuLoad()
-	idle, total := sysinfo.CpuUsage()
-	time.Sleep(2 * time.Second)
-	idle1, total1 := sysinfo.CpuUsage()
-
-	idleTik := float64(idle1 - idle)
-	totalTik := float64(total1 - total)
-	sipiyu := 100 * (totalTik - idleTik) / totalTik
-
-	jcpu := Sysinfo{sipiyu, smin, lmin, lbmin, uptime, usedmem, diskusg, rx, tx}
-	b, _ := json.MarshalIndent(jcpu, "", "    ")
-	ioutil.WriteFile("sistem.json", b, 0644)
-	fmt.Printf("%+v \n", jcpu)
-	fmt.Println("total ", totol, "free ", freo, "terpakai ", usedmem)
-	*/
 }

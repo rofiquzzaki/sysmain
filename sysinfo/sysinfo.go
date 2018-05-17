@@ -16,10 +16,6 @@ func Thermal() (temp int) {
 	}
 	jumlah := len(files)
 	path := files[jumlah-1]
-	//var path string
-	//for _, x := range files {
-	//	path = x
-	//}
 	isi, err := ioutil.ReadFile(path+"/temp")
 	if err !=nil {
 		return
@@ -97,24 +93,6 @@ func BwMon(ether string) /*(bwmon int)*/ {
 		bwtemp1 = bwnow
 		keisi = strconv.Itoa(bwmon)+" "+strconv.Itoa(bwtemp1)+" "+strconv.Itoa(statstart1)
 	}
-	/*
-	var bwtemp1 int
-	var keisi string
-	var bwmon int
-	if bwnow >= bwtot && bwtemp == 0 {
-		bwmon = (bwnow - bwtot) + bwtot
-		bwtemp1 = 0
-		keisi = strconv.Itoa(bwmon)+" "+strconv.Itoa(bwtemp1)
-	} else if bwnow >= bwtot && bwtemp > 0 {
-		bwmon = bwnow + bwtot
-		bwtemp1 = 0
-		keisi = strconv.Itoa(bwmon)+" "+strconv.Itoa(bwtemp1)
-	} else if bwnow < bwtot {
-		bwmon = bwnow + bwtot
-		bwtemp1 = bwmon
-		keisi = strconv.Itoa(bwtot)+" "+strconv.Itoa(bwtemp1)
-	}
-	*/
 	//nulis ke file current
 	rusak := ioutil.WriteFile(filepath, []byte(keisi), 0644)
 	if rusak != nil {
