@@ -185,17 +185,18 @@ func bwstartcount(ether string) {
 	}
 }
 
-func loopingcount() {
+func loopingcount(ether string) {
 	for {
 		fmt.Println("fungsi loopingcount")
-		sysinfo.BwMon("enp3s0")
+		sysinfo.BwMon(ether)
 		time.Sleep(time.Second * 10)
 	}
 }
 
 func main() {
+	config := LoadConfiguration("/aino/config/konf.json")
 	//saat startup, status bwMon di ganti 1
-	bwstartcount("enp3s0")
+	bwstartcount(config.Intrf)
 
 	//mapping wrap function
 	m := map[string] fn {
@@ -208,7 +209,6 @@ func main() {
 		"thermal" : WrapThermal,
 	}
 
-	//config := LoadConfiguration("konf.json")
 
 	ruter, _ := zmq.NewSocket(zmq.ROUTER)
 	defer ruter.Close()
@@ -217,13 +217,13 @@ func main() {
 	defer rutertcp.Close()
 
 	ruter.Bind("ipc:///tmp/ngawur")
-	rutertcp.Bind("tcp://*:5671")
+	rutertcp.Bind("tcp://*:"+config.Sport)
 
 	poller := zmq.NewPoller()
 	poller.Add(rutertcp, zmq.POLLIN)
 	poller.Add(ruter, zmq.POLLIN)
 
-	go loopingcount()
+	go loopingcount(config.Intrf)
 
 	for {
 		fmt.Println("for poller")
