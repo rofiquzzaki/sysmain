@@ -189,7 +189,7 @@ func loopingcount(ether string) {
 	for {
 		fmt.Println("fungsi loopingcount")
 		sysinfo.BwMon(ether)
-		time.Sleep(time.Second * 10)
+		time.Sleep(time.Second * 100)
 	}
 }
 
