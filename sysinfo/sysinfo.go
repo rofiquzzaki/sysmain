@@ -45,6 +45,27 @@ func NetUsage(ether string) (rx int, tx int) {
 	return
 }
 
+func ReadBwMon(ether string) (bwmon int){
+	filepath := "/aino/bw_"+ether+".log"
+	isi, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		fmt.Println("Error : ", err)
+		return
+	}
+	isisplit := strings.Split(string(isi), "\n")
+	semua := strings.Fields(isisplit[0])
+	terjumlah, err := strconv.Atoi(semua[0])
+	if err != nil {
+		fmt.Println("Error terjumlah : ", isi, err)
+	}
+	sekarang, err := strconv.Atoi(semua[1])
+	if err != nil {
+		fmt.Println("Error sekarang : ", isi, err)
+	}
+	bwmon = terjumlah + sekarang
+	return
+}
+
 func BwMon(ether string) /*(bwmon int)*/ {
 	rx, tx := NetUsage(ether)
 	bwnow := rx + tx

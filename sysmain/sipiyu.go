@@ -22,6 +22,13 @@ func WrapThermal(melbu string) (metu string) {
 	return
 }
 
+func WrapBw(melbu string) (metu string) {
+	bwmont := sysinfo.ReadBwMon(melbu)
+	bwstr := strconv.Itoa(bwmont)
+	metu = "{ \"bw\" : "+bwstr+" }"
+	return
+}
+
 func WrapNetUsage(melbu string) (metu string) {
 	rx, tx := sysinfo.NetUsage(melbu)
 	time.Sleep(time.Second)
@@ -207,6 +214,7 @@ func main() {
 		"cpuusg" : WrapCpuUsage,
 		"memory" : WrapMemInfo,
 		"thermal" : WrapThermal,
+		"bw" : WrapBw,
 	}
 
 
